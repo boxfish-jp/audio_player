@@ -1,8 +1,10 @@
-import type { ElectronAPI } from "@electron-toolkit/preload";
+import type { ElectronAPI, IpcRenderer } from "@electron-toolkit/preload";
 
 declare global {
 	interface Window {
 		electron: ElectronAPI;
-		api: unknown;
+		api: {
+			onAudio: (callback: (audio: ArrayBuffer) => Promise<void>) => IpcRenderer;
+		};
 	}
 }
