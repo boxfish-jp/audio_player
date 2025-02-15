@@ -5,6 +5,7 @@ import { Slider } from "./components/ui/slider";
 interface Volume {
 	volume: number;
 	channel: number;
+	isMute: boolean;
 }
 
 interface AudioModule {
@@ -35,19 +36,27 @@ function App(): JSX.Element {
 	const [audioMoule, setAudioModule] = useState<AudioModule | null>(null);
 	const [volumes, setVolumes] = useState<Volume[]>([]);
 
-	const handleValueChange = (channel: number, volume: number) => {
+	const handleValueChange = (
+		channel: number,
+		volume: number,
+		isMute: boolean,
+	) => {
 		const newVolumes = [...volumes];
-		newVolumes[channel] = { volume, channel };
+		newVolumes[channel] = { volume, channel, isMute };
 		setVolumes(newVolumes);
 	};
 
-	const handleValueCommit = (channel: number, volume: number) => {
+	const handleValueCommit = (
+		channel: number,
+		volume: number,
+		isMute: boolean,
+	) => {
 		const localStorageItems = localStorage.getItem("volumes");
 		if (localStorageItems) {
 			const items = JSON.parse(localStorageItems) as Volume[];
 			const index = items.findIndex((v) => v.channel === channel);
 			if (index !== -1) {
-				items[index] = { volume, channel };
+				items[index] = { volume, channel, isMute };
 				localStorage.setItem("volumes", JSON.stringify(items));
 			}
 			return;
@@ -60,7 +69,7 @@ function App(): JSX.Element {
 		localStorage.removeItem("volumes");
 		const data = Array(5)
 			.fill(null)
-			.map((_, index) => ({ volume: 50, channel: index }));
+			.map((_, index) => ({ volume: 50, channel: index, isMute: false }));
 		setVolumes(data);
 		localStorage.setItem("volumes", JSON.stringify(volumes));
 	};
@@ -71,11 +80,14 @@ function App(): JSX.Element {
 				channel: number;
 				audio: ArrayBuffer;
 			}) => {
+				const volume = volumes[value.channel].isMute
+					? 0
+					: volumes[value.channel].volume;
 				await playArrayBuffer(
 					value.audio,
 					audioMoule.audioContext,
 					audioMoule.gainNode,
-					volumes[value.channel].volume,
+					volume,
 				);
 			};
 			const remove = window.api.onAudio(func);
@@ -109,25 +121,37 @@ function App(): JSX.Element {
 		<div className="h-screen w-full flex flex-col gap-4 py-5 items-center">
 			<div
 				className="h-screen w-full grid grid-cols-6
-      items-center justify-center"
+      items-center justify-center gap-5"
 			>
 				{volumes.map((v) => (
 					<div
 						key={v.channel}
-						className="col-start-2 col-span-4 flex flex-col items-center justify-center"
+						className="col-start-2 col-span-4 grid grid-cols-6 items-center justify-center gap-2"
 					>
-						<div className="text-2xl">Channel {v.channel}</div>
-						<div className="text-2xl">{v.volume}</div>
+						<div className="text-xl col-span-1">Ch {v.channel}</div>
+						<div className="text-2xl col-start-3 mx-auto">
+							{v.isMute ? 0 : v.volume}
+						</div>
+						<Button
+							className="col-start-6 ms-auto"
+							onClick={() => {
+								handleValueChange(v.channel, v.volume, !v.isMute);
+							}}
+						>
+							{v.isMute ? "Unmute" : "Mute"}
+						</Button>
 						<Slider
+							className="col-span-6"
 							defaultValue={[v.volume]}
-							value={[v.volume]}
+							value={v.isMute ? [0] : [v.volume]}
+							disabled={v.isMute}
 							max={200}
 							step={1}
 							onValueChange={(value: number[]) => {
-								handleValueChange(v.channel, value[0]);
+								handleValueChange(v.channel, value[0], v.isMute);
 							}}
 							onValueCommit={(value: number[]) => {
-								handleValueCommit(v.channel, value[0]);
+								handleValueCommit(v.channel, value[0], v.isMute);
 							}}
 						/>
 					</div>
