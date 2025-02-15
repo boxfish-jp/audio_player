@@ -3,8 +3,16 @@ import { contextBridge, ipcRenderer } from "electron";
 
 // Custom APIs for renderer
 const api = {
-	onAudio: (callback: (audio: ArrayBuffer) => Promise<void>) =>
-		ipcRenderer.on("audio", (_event, value) => callback(value)),
+	onAudio: (
+		callback: (value: { channel: number; audio: ArrayBuffer }) => void,
+	) => {
+		const func = (_event, value: { channel: number; audio: ArrayBuffer }) =>
+			callback(value);
+		ipcRenderer.on("audio", func);
+		return () => {
+			ipcRenderer.removeListener("audio", func);
+		};
+	},
 };
 
 // Use `contextBridge` APIs to expose Electron APIs to

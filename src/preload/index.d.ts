@@ -4,7 +4,12 @@ declare global {
 	interface Window {
 		electron: ElectronAPI;
 		api: {
-			onAudio: (callback: (audio: ArrayBuffer) => Promise<void>) => IpcRenderer;
+			onAudio: (
+				callback: (value: {
+					channel: number;
+					audio: ArrayBuffer;
+				}) => Promise<void>,
+			) => () => void;
 		};
 	}
 }

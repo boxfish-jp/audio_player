@@ -4,7 +4,7 @@ import { join } from "node:path";
 const main = async () => {
 	const audioData = readFileSync(join(__dirname, "test.wav"));
 	try {
-		const url = "http://localhost:8787";
+		const url = "http://localhost:8686?channel=1";
 		const response = await fetch(url, {
 			method: "POST",
 			headers: {

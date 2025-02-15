@@ -10,12 +10,16 @@ export const startServer = (window: BrowserWindow) => {
 
 	restapi.post("/", async (c) => {
 		const audio = await c.req.arrayBuffer();
-		window.webContents.send("audio", audio);
+		const channel = c.req.query("channel");
+		window.webContents.send("audio", {
+			channel: channel ? Number(channel) : 0,
+			audio,
+		});
 		return c.text("ok");
 	});
 
 	serve({
 		fetch: restapi.fetch,
-		port: 8787,
+		port: 8686,
 	});
 };

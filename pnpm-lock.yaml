@@ -32,12 +32,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      electron:
-        specifier: ^34.2.0
-        version: 34.2.0
-      electron-updater:
-        specifier: ^6.1.7
-        version: 6.3.9
       hono:
         specifier: ^4.7.1
         version: 4.7.1
@@ -72,9 +66,15 @@ importers:
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.20(postcss@8.4.49)
+      electron:
+        specifier: ^34.2.0
+        version: 34.2.0
       electron-builder:
         specifier: ^24.13.3
         version: 24.13.3(electron-builder-squirrel-windows@24.13.3)
+      electron-updater:
+        specifier: ^6.3.9
+        version: 6.3.9
       electron-vite:
         specifier: ^2.3.0
         version: 2.3.0(vite@5.4.11(@types/node@20.17.6))
@@ -1657,6 +1657,7 @@ packages:
 
   lodash.isequal@4.5.0:
     resolution: {integrity: sha512-pDo3lu8Jhfjqls6GkMgpahsF9kCyayhgykjyLMNFTKWrpVdAQtYyB4muAMWozBB4ig/dtWAmsMxLEI8wuz+DYQ==}
+    deprecated: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
 
   lodash.isplainobject@4.0.6:
     resolution: {integrity: sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==}

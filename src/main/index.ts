@@ -9,6 +9,7 @@ function createWindow(): BrowserWindow {
 	const mainWindow = new BrowserWindow({
 		width: 900,
 		height: 670,
+		title: "再生君",
 		show: false,
 		autoHideMenuBar: true,
 		...(process.platform === "linux" ? { icon } : {}),
