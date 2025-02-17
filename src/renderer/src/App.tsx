@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "./components/ui/button";
 import { Slider } from "./components/ui/slider";
+import { Player } from "./player";
 
 interface Volume {
 	volume: number;
@@ -35,6 +36,7 @@ async function playArrayBuffer(
 function App(): JSX.Element {
 	const [audioMoule, setAudioModule] = useState<AudioModule | null>(null);
 	const [volumes, setVolumes] = useState<Volume[]>([]);
+	const [player, setPlayer] = useState<Player | null>(null);
 
 	const handleValueChange = (
 		channel: number,
@@ -83,12 +85,16 @@ function App(): JSX.Element {
 				const volume = volumes[value.channel].isMute
 					? 0
 					: volumes[value.channel].volume;
-				await playArrayBuffer(
-					value.audio,
-					audioMoule.audioContext,
-					audioMoule.gainNode,
-					volume,
-				);
+				if (player) {
+					player.addQueue(async () => {
+						await playArrayBuffer(
+							value.audio,
+							audioMoule.audioContext,
+							audioMoule.gainNode,
+							volume,
+						);
+					});
+				}
 			};
 			const remove = window.api.onAudio(func);
 			return () => {
@@ -97,7 +103,7 @@ function App(): JSX.Element {
 			};
 		}
 		return () => {};
-	}, [audioMoule, volumes]);
+	}, [audioMoule, volumes, player]);
 
 	useEffect(() => {
 		const localStorageItems = localStorage.getItem("volumes");
@@ -115,6 +121,8 @@ function App(): JSX.Element {
 			audioContext,
 			gainNode: gainNode,
 		});
+
+		setPlayer(new Player());
 	}, []);
 
 	return (
