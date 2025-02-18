@@ -28,6 +28,12 @@ async function playArrayBuffer(
 		source.buffer = audioBuffer;
 		gainNode.gain.setValueAtTime(volume / 50, audioContext.currentTime);
 		source.start();
+
+		await new Promise<void>((resolve) => {
+			source.onended = () => {
+				resolve();
+			};
+		});
 	} catch (error) {
 		console.error(error);
 	}
