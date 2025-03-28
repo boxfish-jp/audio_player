@@ -42,7 +42,7 @@ async function playArrayBuffer(
 function App(): JSX.Element {
 	const [audioMoule, setAudioModule] = useState<AudioModule | null>(null);
 	const [volumes, setVolumes] = useState<Volume[]>([]);
-	const [player, setPlayer] = useState<Player | null>(null);
+	const [player] = useState<Player>(Player.instance);
 
 	const handleValueChange = (
 		channel: number,
@@ -127,8 +127,6 @@ function App(): JSX.Element {
 			audioContext,
 			gainNode: gainNode,
 		});
-
-		setPlayer(new Player());
 	}, []);
 
 	return (
