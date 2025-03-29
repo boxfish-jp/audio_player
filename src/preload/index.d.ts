@@ -10,6 +10,7 @@ declare global {
 					audio: ArrayBuffer;
 				}) => Promise<void>,
 			) => () => void;
+			onFinish: (finish: boolean) => void;
 		};
 	}
 }

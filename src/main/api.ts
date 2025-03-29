@@ -1,5 +1,5 @@
 import { serve } from "@hono/node-server";
-import type { BrowserWindow } from "electron";
+import { type BrowserWindow, ipcMain } from "electron";
 import { Hono } from "hono";
 
 export const startServer = (window: BrowserWindow) => {
@@ -14,6 +14,13 @@ export const startServer = (window: BrowserWindow) => {
 		window.webContents.send("audio", {
 			channel: channel ? Number(channel) : 0,
 			audio,
+		});
+		await new Promise<string>((resolve) => {
+			const timeout = setTimeout(() => resolve("timeout"), 30000);
+			ipcMain.once("finish", () => {
+				clearTimeout(timeout);
+				resolve("finish");
+			});
 		});
 		return c.text("ok");
 	});

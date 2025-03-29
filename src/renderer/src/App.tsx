@@ -51,7 +51,9 @@ function App(): JSX.Element {
 				? 0
 				: volumes[value.channel].volume;
 			if (player) {
-				await player.addQueue(value.audio, volume, async () => {});
+				await player.addQueue(value.audio, volume, async () => {
+					window.api.onFinish(true);
+				});
 			}
 		};
 		const remove = window.api.onAudio(func);

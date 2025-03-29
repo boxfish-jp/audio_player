@@ -13,6 +13,9 @@ const api = {
 			ipcRenderer.removeListener("audio", func);
 		};
 	},
+	onFinish: (finish: boolean) => {
+		ipcRenderer.send("finish", finish);
+	},
 };
 
 // Use `contextBridge` APIs to expose Electron APIs to
