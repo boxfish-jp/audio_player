@@ -1,47 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "./components/ui/button";
 import { Slider } from "./components/ui/slider";
+import { getVolumeFromStorage, setVolumeToStorage } from "./lib/local_storage";
+import type { Volume } from "./lib/types";
 import { Player } from "./player";
 
-interface Volume {
-	volume: number;
-	channel: number;
-	isMute: boolean;
-}
-
-interface AudioModule {
-	audioContext: AudioContext;
-	gainNode: GainNode;
-}
-
-async function playArrayBuffer(
-	arrayBuffer: ArrayBuffer,
-	audioContext: AudioContext,
-	gainNode: GainNode,
-	volume: number,
-) {
-	const source = audioContext.createBufferSource();
-	source.connect(gainNode);
-	gainNode.connect(audioContext.destination);
-	try {
-		const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-		source.buffer = audioBuffer;
-		gainNode.gain.setValueAtTime(volume / 50, audioContext.currentTime);
-		source.start();
-
-		await new Promise<void>((resolve) => {
-			source.onended = () => {
-				resolve();
-			};
-		});
-	} catch (error) {
-		console.error(error);
-	}
-}
-
 function App(): JSX.Element {
-	const [audioMoule, setAudioModule] = useState<AudioModule | null>(null);
-	const [volumes, setVolumes] = useState<Volume[]>([]);
+	const [volumes, setVolumes] = useState<Volume[]>(getVolumeFromStorage);
 	const [player] = useState<Player>(Player.instance);
 
 	const handleValueChange = (
@@ -59,18 +24,13 @@ function App(): JSX.Element {
 		volume: number,
 		isMute: boolean,
 	) => {
-		const localStorageItems = localStorage.getItem("volumes");
-		if (localStorageItems) {
-			const items = JSON.parse(localStorageItems) as Volume[];
-			const index = items.findIndex((v) => v.channel === channel);
-			if (index !== -1) {
-				items[index] = { volume, channel, isMute };
-				localStorage.setItem("volumes", JSON.stringify(items));
-			}
-			return;
-		}
+		const index = volumes.findIndex((v) => v.channel === channel);
 		const newVolumes = [...volumes];
-		localStorage.setItem("volumes", JSON.stringify(newVolumes));
+		if (index !== -1) {
+			newVolumes[index] = { volume, channel, isMute };
+		}
+		setVolumeToStorage(newVolumes);
+		setVolumes(newVolumes);
 	};
 
 	const onReset = () => {
@@ -79,55 +39,27 @@ function App(): JSX.Element {
 			.fill(null)
 			.map((_, index) => ({ volume: 50, channel: index, isMute: false }));
 		setVolumes(data);
-		localStorage.setItem("volumes", JSON.stringify(volumes));
+		setVolumeToStorage(data);
 	};
 
 	useEffect(() => {
-		if (audioMoule) {
-			const func = async (value: {
-				channel: number;
-				audio: ArrayBuffer;
-			}) => {
-				const volume = volumes[value.channel].isMute
-					? 0
-					: volumes[value.channel].volume;
-				if (player) {
-					player.addQueue(async () => {
-						await playArrayBuffer(
-							value.audio,
-							audioMoule.audioContext,
-							audioMoule.gainNode,
-							volume,
-						);
-					});
-				}
-			};
-			const remove = window.api.onAudio(func);
-			return () => {
-				console.log("unmount");
-				remove();
-			};
-		}
-		return () => {};
-	}, [audioMoule, volumes, player]);
-
-	useEffect(() => {
-		const localStorageItems = localStorage.getItem("volumes");
-		const data = localStorageItems
-			? JSON.parse(localStorageItems)
-			: Array(5)
-					.fill(null)
-					.map((_, index) => ({ volume: 50, channel: index }));
-		setVolumes(data);
-
-		const audioContext = new AudioContext();
-		const gainNode = audioContext.createGain();
-
-		setAudioModule({
-			audioContext,
-			gainNode: gainNode,
-		});
-	}, []);
+		const func = async (value: {
+			channel: number;
+			audio: ArrayBuffer;
+		}) => {
+			const volume = volumes[value.channel].isMute
+				? 0
+				: volumes[value.channel].volume;
+			if (player) {
+				await player.addQueue(value.audio, volume, async () => {});
+			}
+		};
+		const remove = window.api.onAudio(func);
+		return () => {
+			console.log("unmount");
+			remove();
+		};
+	}, [volumes, player]);
 
 	return (
 		<div className="h-screen w-full flex flex-col gap-4 py-5 items-center">
