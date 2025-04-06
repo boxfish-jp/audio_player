@@ -25,6 +25,7 @@
 		"@electron-toolkit/utils": "^3.0.0",
 		"@hono/node-server": "^1.13.8",
 		"@radix-ui/react-alert-dialog": "^1.1.2",
+		"@radix-ui/react-select": "^2.1.6",
 		"@radix-ui/react-slider": "^1.2.3",
 		"@radix-ui/react-slot": "^1.1.0",
 		"class-variance-authority": "^0.7.0",

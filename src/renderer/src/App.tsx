@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button } from "./components/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "./components/ui/select";
 import { Slider } from "./components/ui/slider";
+import { type AudioDevice, AudioDeviceManager } from "./lib/audio_device";
 import { getVolumeFromStorage, setVolumeToStorage } from "./lib/local_storage";
 import type { Volume } from "./lib/types";
 import { Player } from "./player";
@@ -8,6 +16,45 @@ import { Player } from "./player";
 function App(): JSX.Element {
 	const [volumes, setVolumes] = useState<Volume[]>(getVolumeFromStorage);
 	const [player] = useState<Player>(Player.instance);
+	const [audioDevices, setAudioDevices] = useState<AudioDevice[]>([]);
+	const [deviceManager] = useState(AudioDeviceManager.instance);
+	const [selectedDevices, setSelectedDevices] = useState<
+		Record<number, string>
+	>({});
+
+	// デバイス一覧を取得
+	useEffect(() => {
+		async function loadDevices() {
+			await deviceManager.refreshDevices();
+			const devices = deviceManager.getOutputDevices();
+			setAudioDevices(devices);
+
+			// プレイヤーからデバイス設定を読み込む
+			player.loadDeviceSettings();
+
+			// 各チャンネルの選択デバイスを状態に反映
+			const deviceSettings: Record<number, string> = {};
+			for (const v of volumes) {
+				deviceSettings[v.channel] = player.getChannelDevice(v.channel);
+			}
+			setSelectedDevices(deviceSettings);
+		}
+
+		loadDevices();
+
+		// デバイスの変更を検知するリスナー
+		navigator.mediaDevices.addEventListener("devicechange", loadDevices);
+		return () => {
+			navigator.mediaDevices.removeEventListener("devicechange", loadDevices);
+		};
+	}, [deviceManager, player, volumes]);
+
+	// チャンネルごとのデバイス選択ハンドラ
+	const handleDeviceChange = (channel: number, deviceId: string) => {
+		player.setChannelDevice(channel, deviceId);
+		player.saveDeviceSettings();
+		setSelectedDevices((prev) => ({ ...prev, [channel]: deviceId }));
+	};
 
 	const handleValueChange = (
 		channel: number,
@@ -51,7 +98,7 @@ function App(): JSX.Element {
 				? 0
 				: volumes[value.channel].volume;
 			if (player) {
-				await player.addQueue(value.audio, volume, async () => {
+				await player.addQueue(value.audio, volume, value.channel, async () => {
 					window.api.onFinish(true);
 				});
 			}
@@ -67,7 +114,7 @@ function App(): JSX.Element {
 		<div className="h-screen w-full flex flex-col gap-4 py-5 items-center">
 			<div
 				className="h-screen w-full grid grid-cols-6
-      items-center justify-center gap-5"
+        items-center justify-center gap-5"
 			>
 				{volumes.map((v) => (
 					<div
@@ -86,6 +133,26 @@ function App(): JSX.Element {
 						>
 							{v.isMute ? "Unmute" : "Mute"}
 						</Button>
+
+						{/* デバイス選択用のセレクトボックス */}
+						<div className="col-span-6 mb-2">
+							<Select
+								value={selectedDevices[v.channel] || "default"}
+								onValueChange={(value) => handleDeviceChange(v.channel, value)}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="出力デバイスを選択" />
+								</SelectTrigger>
+								<SelectContent>
+									{audioDevices.map((device) => (
+										<SelectItem key={device.deviceId} value={device.deviceId}>
+											{device.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
 						<Slider
 							className="col-span-6"
 							defaultValue={[v.volume]}
