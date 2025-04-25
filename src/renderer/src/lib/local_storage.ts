@@ -1,17 +1,22 @@
-import type { Volume } from "./types";
+import type { AudioSetting } from "./types";
 
-export const getVolumeFromStorage = () => {
-	const localStorageItems = localStorage.getItem("volumes");
+export const readAudioSettings = () => {
+	const localStorageItems = localStorage.getItem("audioSettings");
 	return localStorageItems
-		? (JSON.parse(localStorageItems) as Volume[])
+		? (JSON.parse(localStorageItems) as AudioSetting[])
 		: Array(5)
 				.fill(null)
-				.map((_, index) => ({ volume: 50, channel: index, isMute: false }));
+				.map((_, index) => ({
+					deviceId: "default",
+					volume: 50,
+					channel: index,
+					isMute: false,
+				}));
 };
 
-export const setVolumeToStorage = (volumes: Volume[]) => {
-	const localStorageItems = localStorage.getItem("volumes");
+export const writeAudioSettings = (outputSettings: AudioSetting[]) => {
+	const localStorageItems = localStorage.getItem("audioSettings");
 	if (localStorageItems) {
-		localStorage.setItem("volumes", JSON.stringify(volumes));
+		localStorage.setItem("outputSetting", JSON.stringify(outputSettings));
 	}
 };

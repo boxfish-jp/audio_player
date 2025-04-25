@@ -1,21 +1,12 @@
-import { type AudioDevice, AudioDeviceManager } from "./lib/audio_device";
-
 export class Player {
 	private _queue: AudioController[] = [];
 	private _isProcessing = false;
 	private _audioContext: AudioContext;
 	private _gainNode: GainNode;
-	private _deviceManager: AudioDeviceManager;
-	private _channelDevices: Map<number, string> = new Map(); // チャンネルごとのデバイスID
 
 	private constructor() {
 		this._audioContext = new AudioContext();
 		this._gainNode = this._audioContext.createGain();
-		this._deviceManager = AudioDeviceManager.instance();
-
-		for (let i = 0; i < 5; i++) {
-			this._channelDevices.set(i, "default");
-		}
 	}
 
 	private static _instance: Player;
@@ -28,12 +19,11 @@ export class Player {
 	}
 
 	async addQueue(
+		deviceId: string,
 		audioData: ArrayBuffer,
 		volume: number,
-		channelNumber: number,
 		onEnded: () => Promise<void>,
 	) {
-		const deviceId = this._channelDevices.get(channelNumber) || "default";
 		const audio = new AudioController(
 			this._audioContext,
 			this._gainNode,
@@ -44,36 +34,6 @@ export class Player {
 		audio.onEnded = onEnded;
 		this._queue.push(audio);
 		this._play();
-	}
-
-	setChannelDevice(channel: number, deviceId: string) {
-		this._channelDevices.set(channel, deviceId);
-	}
-
-	getChannelDevice(channel: number): string {
-		return this._channelDevices.get(channel) || "default";
-	}
-
-	saveDeviceSettings() {
-		const settings = Array.from(this._channelDevices.entries()).reduce(
-			(obj, [channel, deviceId]) => {
-				obj[channel] = deviceId;
-				return obj;
-			},
-			{} as Record<number, string>,
-		);
-
-		localStorage.setItem("channelDevices", JSON.stringify(settings));
-	}
-
-	loadDeviceSettings() {
-		const settings = localStorage.getItem("channelDevices");
-		if (settings) {
-			const parsed = JSON.parse(settings) as Record<number, string>;
-			for (const [channel, deviceId] of Object.entries(parsed)) {
-				this._channelDevices.set(Number(channel), deviceId);
-			}
-		}
 	}
 
 	private async _play() {
