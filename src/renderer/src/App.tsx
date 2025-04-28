@@ -20,7 +20,6 @@ function App(): JSX.Element {
 	const [deviceLists, setdeviceLists] = useState<AudioDevice[]>([]);
 	const [deviceManager] = useState(AudioDeviceManager.instance);
 
-	// デバイス一覧を取得
 	useEffect(() => {
 		deviceManager.refreshDevices().then((lists) => {
 			setdeviceLists(lists);
@@ -39,7 +38,6 @@ function App(): JSX.Element {
 			newAudioSettings[index] = { deviceId, volume, channel, isMute };
 		}
 		setAudioSettings(newAudioSettings);
-		console.log("change", index);
 	};
 
 	const handleValueCommit = (
@@ -55,7 +53,6 @@ function App(): JSX.Element {
 		}
 		writeAudioSettings(newAudioSettings);
 		setAudioSettings(newAudioSettings);
-		console.log("commit");
 	};
 
 	const onReset = () => {
@@ -89,7 +86,6 @@ function App(): JSX.Element {
 		};
 		const remove = window.api.onAudio(func);
 		return () => {
-			console.log("unmount");
 			remove();
 		};
 	}, [audioSettings, player]);
