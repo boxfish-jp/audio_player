@@ -15,8 +15,5 @@ export const readAudioSettings = () => {
 };
 
 export const writeAudioSettings = (outputSettings: AudioSetting[]) => {
-	const localStorageItems = localStorage.getItem("audioSettings");
-	if (localStorageItems) {
-		localStorage.setItem("outputSetting", JSON.stringify(outputSettings));
-	}
+	localStorage.setItem("audioSettings", JSON.stringify(outputSettings));
 };
