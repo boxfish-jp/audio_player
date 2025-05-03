@@ -44,6 +44,7 @@ export class Player {
 					const audio = this._queue.shift();
 					if (audio) {
 						await audio.play();
+						await audio.onEnded();
 					}
 				}
 			} finally {
@@ -79,6 +80,10 @@ class AudioController {
 		this._onEnded = onEnded;
 	}
 
+	get onEnded() {
+		return this._onEnded;
+	}
+
 	public async play() {
 		const source = this._audioContext.createBufferSource();
 		try {
@@ -90,43 +95,40 @@ class AudioController {
 				this._volume / 50,
 				this._audioContext.currentTime,
 			);
-			const destination = this._audioContext.createMediaStreamDestination();
 
-			// 接続: source -> gainNode -> destination
-			source.connect(this._gainNode);
-			this._gainNode.connect(destination);
-
-			// AudioElementを作成して特定のデバイスに出力
-			const audioEl = new Audio();
-			audioEl.srcObject = destination.stream;
-
-			// デバイスIDが指定されている場合は出力先を設定
-			if (this._deviceId && "setSinkId" in audioEl) {
-				try {
-					await audioEl.setSinkId(this._deviceId);
-				} catch (error) {
-					console.error(
-						`デバイス(${this._deviceId})への出力設定に失敗しました:`,
-						error,
-					);
-					// エラー時はデフォルトデバイスを使用
-				}
+			try {
+				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+				await (this._audioContext as any).setSinkId(this._deviceId);
+			} catch (error) {
+				console.error(
+					`デバイス(${this._deviceId})への出力設定に失敗しました:`,
+					error,
+				);
 			}
 
-			// 再生開始
+			source.connect(this._gainNode);
+			this._gainNode.connect(this._audioContext.destination);
+
 			source.start();
-			await audioEl.play();
 
 			await new Promise<void>((resolve) => {
 				source.onended = async () => {
-					await this._onEnded();
-					audioEl.pause();
-					audioEl.srcObject = null;
 					resolve();
 				};
 			});
 		} catch (error) {
 			console.error(error);
+		} finally {
+			// ノード間の接続を解除
+			this._gainNode.disconnect();
+			source.disconnect();
+
+			/*
+			// AudioContext を終了
+			if (this._audioContext.state !== "closed") {
+				this._audioContext.close();
+			}
+      */
 		}
 	}
 }
