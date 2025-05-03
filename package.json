@@ -6,6 +6,7 @@
 	"author": "example.com",
 	"homepage": "https://electron-vite.org",
 	"scripts": {
+		"test": "pnpm dlx tsx test/index.ts",
 		"format": "biome check --write",
 		"lint": "biome check --write",
 		"typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",

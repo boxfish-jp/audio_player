@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const main = async () => {
-	const audioData = readFileSync(join(__dirname, "test2.wav"));
+	const audioData = readFileSync(join(__dirname, "test.wav"));
 	try {
 		const url = "http://localhost:8686?channel=0";
 		const response = await fetch(url, {
