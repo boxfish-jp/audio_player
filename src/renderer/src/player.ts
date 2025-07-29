@@ -111,11 +111,15 @@ class AudioController {
 
 			source.start();
 
+			const timeout = setTimeout(() => {
+				throw new Error("Audio playback timed out after 30 seconds");
+			}, 30000);
 			await new Promise<void>((resolve) => {
 				source.onended = async () => {
 					resolve();
 				};
 			});
+			clearTimeout(timeout);
 		} catch (error) {
 			console.error(error);
 		} finally {
