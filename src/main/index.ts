@@ -9,7 +9,7 @@ function createWindow(): BrowserWindow {
 	// Create the browser window.
 	const mainWindow = new BrowserWindow({
 		width: 900,
-		height: 670,
+		height: 750,
 		title: "再生君",
 		show: false,
 		autoHideMenuBar: true,
