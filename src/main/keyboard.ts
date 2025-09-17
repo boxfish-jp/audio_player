@@ -1,30 +1,59 @@
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import path from "node:path";
 import { globalShortcut } from "electron/main";
+import * as z from "zod";
+
+const ShortCutConfigs = z.array(
+	z.object({
+		key: z.string(),
+		url: z.string(),
+	}),
+);
 
 export const addKeyboardEventListenner = () => {
-	const shortcuts: { [key: string]: string } = {
-		F13: "http://localhost:2525?inst=talk",
-		F14: "http://localhost:2525/interrupt",
-		F15: "http://localhost:2525?inst=progress",
-		F16: "http://localhost:2525?inst=cli",
-	};
+	try {
+		const data = readFileSync(
+			path.join(homedir(), ".config", "audio_player", "setting.json"),
+		);
+		try {
+			const shortCutConfigs = ShortCutConfigs.parse(
+				JSON.parse(data.toString()),
+			);
 
-	for (const [key, url] of Object.entries(shortcuts)) {
-		const ret = globalShortcut.register(key, () => {
-			sendPostRequest(url, key);
-		});
+			/*
+			const shortcuts: { [key: string]: string } = {
+				F13: "http://localhost:2525?inst=talk",
+				F14: "http://localhost:2525/interrupt",
+				F15: "http://localhost:2525?inst=progress",
+				F16: "http://localhost:2525?inst=cli",
+			};
+      */
 
-		if (!ret) {
-			console.error(`${key} shortcutKey failed`);
-		} else {
-			console.log(`${key} shortcutKey success`);
+			for (const config of shortCutConfigs) {
+				const ret = globalShortcut.register(config.key, async () => {
+					const receivedMessage = await sendPostRequest(config.url);
+					console.log(`[${config.key}] ${receivedMessage}`);
+				});
+
+				if (!ret) {
+					console.error(`${config.key} shortcutKey failed`);
+				} else {
+					console.log(`${config.key} shortcutKey success`);
+				}
+			}
+		} catch (parseError) {
+			console.log(
+				"Configuration file is malformed. Keylogger will not start." +
+					parseError,
+			);
 		}
+	} catch (loadFileErr) {
+		console.log("Configuration file not found. Keylogger will not start.");
 	}
 };
 
-async function sendPostRequest(
-	url: string,
-	shortcutKey: string,
-): Promise<void> {
+async function sendPostRequest(url: string): Promise<string> {
 	try {
 		const response: Response = await fetch(url, {
 			method: "POST",
@@ -32,18 +61,19 @@ async function sendPostRequest(
 		});
 
 		if (response.ok) {
+			return `${url} post request succeeded`;
 		} else {
 			try {
 				const errorBody: string = await response.text();
-				console.error(`[${shortcutKey}] error body:`, errorBody);
+				return `${url} post request failed: ${response.status} ${response.statusText} - ${errorBody}`;
 			} catch (bodyError: unknown) {
 				const message =
 					bodyError instanceof Error ? bodyError.message : String(bodyError);
-				console.error(`[${shortcutKey}] response body parse failed`, message);
+				return `${url} post request failed: ${response.status} ${response.statusText} - (failed to parse error body: ${message})`;
 			}
 		}
 	} catch (error: unknown) {
 		const message = error instanceof Error ? error.message : String(error);
-		console.log(message);
+		return `Fetch error for ${url}: ${message}`;
 	}
 }
