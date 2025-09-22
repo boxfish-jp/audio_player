@@ -11,18 +11,33 @@ export const startServer = (window: BrowserWindow) => {
 	restapi.post("/", async (c) => {
 		const audio = await c.req.arrayBuffer();
 		const channel = c.req.query("channel");
+		const id = Date.now();
 		window.webContents.send("audio", {
+			id: id,
 			channel: channel ? Number(channel) : 0,
 			audio,
 		});
-		await new Promise<string>((resolve) => {
-			const timeout = setTimeout(() => resolve("timeout"), 30000);
-			ipcMain.once("finish", () => {
-				clearTimeout(timeout);
-				resolve("finish");
+		try {
+			await new Promise<string>((resolve, reject) => {
+				const timeout = setTimeout(() => resolve("timeout"), 30000);
+				ipcMain.once(
+					"finish",
+					(_event, receivedId: number, receivedMessage: string) => {
+						if (id == receivedId) {
+							clearTimeout(timeout);
+							if (receivedMessage === "ok") {
+								resolve("finish");
+							} else {
+								reject(receivedMessage);
+							}
+						}
+					},
+				);
 			});
-		});
-		return c.text("ok");
+			return c.text("ok");
+		} catch (e) {
+			return c.text(String(e), 500);
+		}
 	});
 
 	serve({

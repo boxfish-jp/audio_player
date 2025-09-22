@@ -6,15 +6,17 @@ const api = {
 	onAudio: (
 		callback: (value: { channel: number; audio: ArrayBuffer }) => void,
 	) => {
-		const func = (_event, value: { channel: number; audio: ArrayBuffer }) =>
-			callback(value);
+		const func = (
+			_event,
+			value: { id: number; channel: number; audio: ArrayBuffer },
+		) => callback(value);
 		ipcRenderer.on("audio", func);
 		return () => {
 			ipcRenderer.removeListener("audio", func);
 		};
 	},
-	onFinish: (finish: boolean) => {
-		ipcRenderer.send("finish", finish);
+	onFinish: (id: number, message: string) => {
+		ipcRenderer.send("finish", id, message);
 	},
 };
 

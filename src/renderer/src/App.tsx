@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Button } from "./components/ui/button";
 import {
 	Select,
@@ -8,87 +7,12 @@ import {
 	SelectValue,
 } from "./components/ui/select";
 import { Slider } from "./components/ui/slider";
-import { AudioDeviceManager } from "./lib/audio_device";
-import { readAudioSettings, writeAudioSettings } from "./lib/local_storage";
-import type { AudioDevice, AudioSetting } from "./lib/types";
-import { Player } from "./player";
+import { useAudioDevices } from "./hooks/audio_devices_hook";
+import { useChannels } from "./hooks/channels_hook";
 
 function App(): JSX.Element {
-	const [audioSettings, setAudioSettings] =
-		useState<AudioSetting[]>(readAudioSettings);
-	const [player] = useState<Player>(Player.instance);
-	const [deviceLists, setdeviceLists] = useState<AudioDevice[]>([]);
-	const [deviceManager] = useState(AudioDeviceManager.instance);
-
-	useEffect(() => {
-		deviceManager.refreshDevices().then((lists) => {
-			setdeviceLists(lists);
-		});
-	}, [deviceManager]);
-
-	const handleValueChange = (
-		deviceId: string,
-		channel: number,
-		volume: number,
-		isMute: boolean,
-	) => {
-		const index = audioSettings.findIndex((v) => v.channel === channel);
-		const newAudioSettings = [...audioSettings];
-		if (index !== -1) {
-			newAudioSettings[index] = { deviceId, volume, channel, isMute };
-		}
-		setAudioSettings(newAudioSettings);
-	};
-
-	const handleValueCommit = (
-		deviceId: string,
-		channel: number,
-		volume: number,
-		isMute: boolean,
-	) => {
-		const index = audioSettings.findIndex((v) => v.channel === channel);
-		const newAudioSettings = [...audioSettings];
-		if (index !== -1) {
-			newAudioSettings[index] = { deviceId, volume, channel, isMute };
-		}
-		writeAudioSettings(newAudioSettings);
-		setAudioSettings(newAudioSettings);
-	};
-
-	const onReset = () => {
-		localStorage.removeItem("audioSettings");
-		const data = Array(5)
-			.fill(null)
-			.map((_, index) => ({
-				deviceId: "default",
-				volume: 50,
-				channel: index,
-				isMute: false,
-			}));
-		setAudioSettings(data);
-		writeAudioSettings(data);
-	};
-
-	useEffect(() => {
-		const func = async (value: {
-			channel: number;
-			audio: ArrayBuffer;
-		}) => {
-			const volume = audioSettings[value.channel].isMute
-				? 0
-				: audioSettings[value.channel].volume;
-			const deviceId = audioSettings[value.channel].deviceId;
-			if (player) {
-				await player.addQueue(deviceId, value.audio, volume, async () => {
-					window.api.onFinish(true);
-				});
-			}
-		};
-		const remove = window.api.onAudio(func);
-		return () => {
-			remove();
-		};
-	}, [audioSettings, player]);
+	const channels = useChannels();
+	const audioDevices = useAudioDevices();
 
 	return (
 		<div className="h-screen w-full flex flex-col gap-4 py-5 items-center">
@@ -96,7 +20,7 @@ function App(): JSX.Element {
 				className="h-screen w-full grid grid-cols-6
         items-center justify-center gap-5"
 			>
-				{audioSettings.map((v) => (
+				{channels.items.map((v) => (
 					<div
 						key={v.channel}
 						className="col-start-2 col-span-4 grid grid-cols-6 items-center justify-center gap-2"
@@ -108,7 +32,12 @@ function App(): JSX.Element {
 						<Button
 							className="col-start-6 ms-auto"
 							onClick={() => {
-								handleValueChange(v.deviceId, v.channel, v.volume, !v.isMute);
+								channels.handleValueCommit(
+									v.deviceId,
+									v.channel,
+									v.volume,
+									!v.isMute,
+								);
 							}}
 						>
 							{v.isMute ? "Unmute" : "Mute"}
@@ -119,14 +48,19 @@ function App(): JSX.Element {
 							<Select
 								value={v.deviceId}
 								onValueChange={(value) =>
-									handleValueCommit(value, v.channel, v.volume, v.isMute)
+									channels.handleValueCommit(
+										value,
+										v.channel,
+										v.volume,
+										v.isMute,
+									)
 								}
 							>
 								<SelectTrigger className="w-full">
 									<SelectValue placeholder="出力デバイスを選択" />
 								</SelectTrigger>
 								<SelectContent>
-									{deviceLists.map((device) => (
+									{audioDevices.map((device) => (
 										<SelectItem key={device.deviceId} value={device.deviceId}>
 											{device.label}
 										</SelectItem>
@@ -143,16 +77,26 @@ function App(): JSX.Element {
 							max={200}
 							step={1}
 							onValueChange={(value: number[]) => {
-								handleValueChange(v.deviceId, v.channel, value[0], v.isMute);
+								channels.handleValueChange(
+									v.deviceId,
+									v.channel,
+									value[0],
+									v.isMute,
+								);
 							}}
 							onValueCommit={(value: number[]) => {
-								handleValueCommit(v.deviceId, v.channel, value[0], v.isMute);
+								channels.handleValueCommit(
+									v.deviceId,
+									v.channel,
+									value[0],
+									v.isMute,
+								);
 							}}
 						/>
 					</div>
 				))}
 			</div>
-			<Button className="w-fit" onClick={onReset}>
+			<Button className="w-fit" onClick={channels.onReset}>
 				Reset
 			</Button>
 		</div>

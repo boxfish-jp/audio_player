@@ -6,11 +6,12 @@ declare global {
 		api: {
 			onAudio: (
 				callback: (value: {
+					id: number;
 					channel: number;
 					audio: ArrayBuffer;
 				}) => Promise<void>,
 			) => () => void;
-			onFinish: (finish: boolean) => void;
+			onFinish: (id: number, message: string) => void;
 		};
 	}
 }
