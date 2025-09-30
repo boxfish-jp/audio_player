@@ -25,6 +25,7 @@ const onAudio = async (
 			case 2:
 			case 3:
 				playAudioManagers[1].addQueue(item);
+				break;
 			case 4:
 				playAudioManagers[2].addQueue(item);
 				break;
